@@ -1,0 +1,39 @@
+## Project: Swindon to Bath Spa train delay analysis
+Goal: use historical delay data to estimate how likely a given train is to be late.
+
+### 2026-11-16
+- Data source: HSP API on Rail Data Marketplace (individual account, awaiting approval)
+- Learned pandas on fake data: read_csv, filtering, new columns, groupby
+- Existing tools found (Departure Bored, Fasteroute), so the angle is depth on one route, not "first ever"
+- Plan: clean data, analyse by train time/weekday, chart it, then try a simple model
+
+## 2026-11-16 - Getting real data
+
+### Data source
+- Using the HSP (Historical Service Performance) API via Rail Data Marketplace
+- Registered as an individual and subscribed (free, open licence, runs until 16 Nov 2027)
+- Old National Rail portal is being replaced by RDM, and the old wiki docs are out of date
+- Only about 1 year of history is available, and the API can be flaky and rate-limited
+
+### What I learned
+- pandas: read_csv, selecting columns, filtering rows, new columns, sort_values, groupby
+- True/False columns can be added up or averaged to get counts and percentages
+- Blank delays probably mean cancelled trains, so they must be kept, not dropped
+- Calling an API from Python with requests; API keys go in an environment variable, never in code
+- Fixed a 403 error by adding a User-Agent header (the gateway blocked Python's default one)
+- API replies are nested JSON: lists of dictionaries, read with square brackets
+
+### What I built
+- train-delays.py: small test that proved the connection works
+- collect.py: pulls Swindon -> Bath Spa trains (06:30-09:30 departures, weekdays), fetches each train's actual times, works out departure and arrival delay in minutes, saves to delays_raw.csv. Skips trains already saved, pauses between requests and stops cleanly on rate limits.
+- First run: 2-13 Nov 2026, 70 trains, no errors
+
+### Decisions
+- Idea is not new (Departure Bored, Fasteroute exist), so the angle is depth on one route, not "first ever"
+- Start with historical probability ("how often is this train late"), then try a prediction model as a stretch goal
+- Keep cancellations in the data
+
+### Next
+- Collect more weeks, a month at a time
+- Check blanks and cancellations in delays_raw.csv
+- Analyse by train time and weekday, then chart it
