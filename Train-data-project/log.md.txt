@@ -37,3 +37,29 @@ Goal: use historical delay data to estimate how likely a given train is to be la
 - Collect more weeks, a month at a time
 - Check blanks and cancellations in delays_raw.csv
 - Analyse by train time and weekday, then chart it
+
+## 2026-11-22 - Tidying up and starting the analysis
+
+### Setup
+- Moved both projects out of OneDrive into C:\dev\personal projects (OneDrive syncing can break git repos)
+- Re-cloned the repo from GitHub and fixed a mix-up where old A-Fighter code had overwritten the new version (git restore)
+- Learned that .gitignore means "don't upload", not "don't need": delays_raw.csv and .env stay on my PC only
+- Learned the git routine: pull first, then edit; add -> commit -> push to save work
+
+### Data collection
+- Updated collect.py to save every 10 trains, so a crash or rate limit no longer loses the whole run
+- Started collecting October 2026 (141 trains); the API returned lots of 503 "server busy" errors, so some trains failed and need re-running later
+- date(2026, 11, 2) is year, month, day
+
+### Analysis (started)
+- Set up analysis.ipynb, a Jupyter notebook using the Anaconda Python
+- pandas: read_csv, df.head(), len(df), df.isna().sum()
+- Learned the difference between functions (len(df)) and methods (df.head())
+- Big lesson: pandas works on whole columns at once, so no loops needed. df.isna().sum() counts blanks in one line
+- Found 1 blank arr_delay_mins out of 70 trains (probably a cancellation, to check)
+
+### Next
+- Re-run collect.py for October to retry the failed trains
+- Look at the blank train: was it cancelled?
+- Add "cancelled" and "late" (5+ minutes) columns
+- First real question: what % of my trains are late?
