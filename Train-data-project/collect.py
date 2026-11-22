@@ -28,6 +28,9 @@ DETAILS_URL = f"{BASE}/serviceDetails"
 FROM_STATION = "SWI"
 TO_STATION = "BTH"
 
+if "RDM_API_KEY" not in os.environ:
+    raise SystemExit("RDM_API_KEY is not set. Set your API key first, then run again.")
+
 HEADERS = {
     "x-apikey": os.environ["RDM_API_KEY"],
     "Content-Type": "application/json",
@@ -59,6 +62,7 @@ def post(url, body):
             return None
         time.sleep(PAUSE_SECONDS)
         return r.json()
+    print("  gave up after 3 tries")
     return None
 
 
@@ -130,32 +134,48 @@ def get_row(rid, planned_dep, planned_arr, toc):
     }
 
 
+def save(rows):
+    """Add rows to the end of the CSV (writes the header if the file is new)."""
+    if rows:
+        pd.DataFrame(rows).to_csv(OUTPUT_FILE, mode="a", header=not Path(OUTPUT_FILE).exists(), index=False)
+
+
 def main():
     done = set()
     if Path(OUTPUT_FILE).exists():
         done = set(pd.read_csv(OUTPUT_FILE, dtype=str)["rid"])
         print(f"{len(done)} trains already saved, will skip those.")
 
-    trains = [t for t in get_rids() if t[0] not in done]
-    print(f"{len(trains)} trains to fetch.")
-
-    new_rows = []
+    unsaved = []   # rows fetched but not written to the CSV yet
+    saved = 0
+    failed = 0
     try:
+        trains = [t for t in get_rids() if t[0] not in done]
+        print(f"{len(trains)} trains to fetch.")
+
         for n, (rid, dep, arr, toc) in enumerate(trains, 1):
             row = get_row(rid, dep, arr, toc)
             if row:
-                new_rows.append(row)
+                unsaved.append(row)
+            else:
+                failed += 1
             if n % 10 == 0:
+                # save every 10 trains, so a crash only loses the last few
+                save(unsaved)
+                saved += len(unsaved)
+                unsaved = []
                 print(f"  {n}/{len(trains)} done")
     except RateLimited:
-        print("Hit the rate limit (429). Saving what we have. Wait a while and run again.")
-
-    if new_rows:
-        df = pd.DataFrame(new_rows)
-        df.to_csv(OUTPUT_FILE, mode="a", header=not Path(OUTPUT_FILE).exists(), index=False)
-        print(f"Saved {len(new_rows)} new rows to {OUTPUT_FILE}")
-    else:
-        print("No new rows saved.")
+        print("Hit the rate limit (429). Wait a while and run again - it carries on where it stopped.")
+    except KeyboardInterrupt:
+        print("Stopped by you (Ctrl+C).")
+    finally:
+        # runs no matter how the loop ended: saves whatever is left
+        save(unsaved)
+        saved += len(unsaved)
+        print(f"Saved {saved} new rows to {OUTPUT_FILE}.")
+        if failed:
+            print(f"{failed} trains could not be fetched. Run again later to retry them.")
 
 
 if __name__ == "__main__":
