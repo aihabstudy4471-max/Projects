@@ -14,8 +14,8 @@ import pandas as pd
 import requests
 
 # ---------- settings you can change ----------
-DATE_FROM = date(2026, 11, 2)    # start of the period to collect
-DATE_TO = date(2026, 11, 13)     # end of the period to collect
+DATE_FROM = date(2026, 10, 1)    # start of the period to collect
+DATE_TO = date(2026, 10, 31)     # end of the period to collect
 FROM_TIME = "0630"               # earliest departure from Swindon
 TO_TIME = "0930"                 # latest departure from Swindon
 OUTPUT_FILE = "delays_raw.csv"
